@@ -600,7 +600,18 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2652877436617527112}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2400652735157295365}
+        m_MethodName: attemptToCreateRoom
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &2652877436788571026
 GameObject:
   m_ObjectHideFlags: 0
@@ -1590,7 +1601,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2652877437832994199}
-  - component: {fileID: 4654642646084072910}
+  - component: {fileID: 2400652735157295365}
   m_Layer: 5
   m_Name: CreatingRoom
   m_TagString: Untagged
@@ -1621,7 +1632,7 @@ RectTransform:
   m_AnchoredPosition: {x: -3.2284, y: -1.2871017}
   m_SizeDelta: {x: 2003.6722, y: 1045.7651}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &4654642646084072910
+--- !u!114 &2400652735157295365
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1633,6 +1644,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5d4724b469e00749843a4657eff6cb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isPrivateServer: {fileID: 7819995779901822544}
+  nameServerInput: {fileID: 2652877437786576433}
   slotsSlider: {fileID: 2652877436596492226}
   minSlots_label: {fileID: 1963944729285663151}
   maxSlots_label: {fileID: 3677760654898021947}

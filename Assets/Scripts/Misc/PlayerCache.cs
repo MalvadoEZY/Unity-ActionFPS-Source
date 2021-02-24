@@ -4,9 +4,7 @@ namespace com.Core.Cache.Player
 {
     public class PlayerCache : MonoBehaviour
     {
-        public static string playerUsername { get; private set; }//cfg.username
-
-        public static string PlayerName { get { return playerUsername; } }
+        public static string playerUsername { get; set; }//cfg.username
         // Start is called before the first frame update
         void Start()
         {

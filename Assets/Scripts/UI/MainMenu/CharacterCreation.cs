@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using com.Core.UI;
 using com.Core.Network;
-
+using com.Core.Cache.Player;
 public class CharacterCreation : MonoBehaviour
 {
     [SerializeField] private Text usernameInput;
@@ -28,14 +28,14 @@ public class CharacterCreation : MonoBehaviour
         Debug.Log(p_usernameInput);
         if (p_usernameInput.Length < minUsernameLenght || p_usernameInput.Length > maxUsernameLenght) return; //WIP: Send notification to advice the user
         //Add username in cache
+        PlayerCache.playerUsername = p_usernameInput;
         PlayerPrefs.SetString("cfg.username", p_usernameInput);
 
         //Connect to the main server & Lobby
         NetworkManager.ConnectToMaster();
         //Hides all menus until the connection is stablished in NetworkCallback Script.
         MenuManager.DisableMenus();
-
-
-
     }
+
+
 }
