@@ -143,9 +143,8 @@ namespace com.Core.Client
         // Update is called once per frame
         void Update()
         {
-            if (!photonView.IsMine) {
-                syncNetworkClient();
-            };
+            syncNetworkClient();
+            if (!photonView.IsMine) return;
             updatePlayerMovementAnimations();
             if (isGrounded)
             {
@@ -164,8 +163,9 @@ namespace com.Core.Client
         {
             if(!photonView.IsMine)
             {
-                transform.position = Vector3.Lerp(transform.position, RemotePlayerPosition, .2f);
+                transform.position = Vector3.SmoothDamp(transform.position, RemotePlayerPosition, ref remotePositionVel, .2f);
                 transform.rotation = Quaternion.Lerp(transform.rotation, RemotePlayerRotation, .2f);
+                
             }
         }
 
