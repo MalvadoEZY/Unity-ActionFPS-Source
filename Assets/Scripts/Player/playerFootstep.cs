@@ -9,7 +9,7 @@ public class playerFootstep : MonoBehaviourPunCallbacks
     [SerializeField] private Transform footstepSource;
     [SerializeField] private PhotonView PV;
 
-    private protected float footstepMaxDistance = 20f;
+    private protected float footstepMaxDistance = 30f;
 
     public void footstepSound()
     {
@@ -33,10 +33,10 @@ public class playerFootstep : MonoBehaviourPunCallbacks
         var aSource = tempGO.AddComponent<AudioSource>(); // add an audio source
         aSource.clip = footsteps[footStepIndex]; // define the clip
         aSource.playOnAwake = false;
-        aSource.volume = .4f;
+        aSource.volume = .3f;
         aSource.spatialBlend = 1f; //3D sound if is not the local player
         aSource.minDistance = 0f;
-        aSource.maxDistance = 15f;
+        aSource.maxDistance = footstepMaxDistance;
         aSource.rolloffMode = AudioRolloffMode.Linear;
         if (PV.IsMine) aSource.spatialBlend = 0f; // 2D if is local player
         aSource.maxDistance = footstepMaxDistance;

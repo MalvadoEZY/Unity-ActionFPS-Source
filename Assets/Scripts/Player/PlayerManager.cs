@@ -14,7 +14,7 @@ using com.Core.Configuration;
 
 namespace com.Core.Client
 {
-    public class PlayerManager : MonoBehaviourPunCallbacks
+    public class PlayerManager : MonoBehaviourPunCallbacks, IPunObservable
     {
         //GameObjects
         [SerializeField] private GameObject playerOnlyArms; //For the local user
@@ -30,6 +30,9 @@ namespace com.Core.Client
 
         //Animation
         [SerializeField] private Animator playerAnimator; //Get Player Animator
+
+        private protected float animatorFatigueDelay = 10f; //Delay until the player plays the fatigue animation
+        private protected float animatorFatigueTimer = 0f; //Stores the player standing time
 
         //Checkers
         [SerializeField] private Transform wallChecker; //Check the material of the wall
@@ -86,6 +89,14 @@ namespace com.Core.Client
 
         private bool FPSMode = false; //Stores the information that if the player is in first person or not
 
+        //Syncing player transform and rotation variables
+        private Quaternion RemotePlayerRotation;
+        private Quaternion remotePlayerRotVel;
+
+        private Vector3 RemotePlayerPosition;
+        private Vector3 remotePositionVel;
+
+
        // DEVELOPMENT USE ONLY | IT WILL IGNORE ANY NETWORKING COMPONENT OF THE PLAYER
         /// //////// ----------------------------
         /// 
@@ -132,19 +143,47 @@ namespace com.Core.Client
         // Update is called once per frame
         void Update()
         {
-            if (!photonView.IsMine) return;
-                updatePlayerMovementAnimations();
-                if (isGrounded)
-                {
-                    playerAnimator.SetBool("IsGrounded", true);
-                } else
-                {
-                    playerAnimator.SetBool("IsGrounded", false);
-                }
+            if (!photonView.IsMine) {
+                syncNetworkClient();
+            };
+            updatePlayerMovementAnimations();
+            if (isGrounded)
+            {
+                playerAnimator.SetBool("IsGrounded", true);
+            } else
+            {
+                playerAnimator.SetBool("IsGrounded", false);
+            }
             //Update player status
-                updatePlayerMovement();
-                updatePlayerView();
-                checkUpdateKeybinds();
+            updatePlayerMovement();
+            updatePlayerView();
+            checkUpdateKeybinds();
+        }
+
+        private void syncNetworkClient()
+        {
+            if(!photonView.IsMine)
+            {
+                transform.position = Vector3.Lerp(transform.position, RemotePlayerPosition, .2f);
+                transform.rotation = Quaternion.Lerp(transform.rotation, RemotePlayerRotation, .2f);
+            }
+        }
+
+        public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+        {
+            if (stream.IsWriting)
+            {
+                stream.SendNext(transform.position);
+                stream.SendNext(transform.rotation);
+          
+            }
+            else if(stream.IsReading)
+            {
+                RemotePlayerPosition = (Vector3)stream.ReceiveNext();
+                RemotePlayerRotation = (Quaternion)stream.ReceiveNext();
+            }
+            
+
         }
 
         private protected void toggleObjects(bool hideObjects)
@@ -202,11 +241,14 @@ namespace com.Core.Client
                         velocity = reflection * 15f;
                         velocity.y = jumpForce * gravity; // Jump force upwards went jump from the wall
 
+                        playerAnimator.SetTrigger("WallJump");
+
                     }
                     else
                     {
                         //If player tries to jump in middle of the air
                         availableJumps = 0;
+                        return;
                     }
                 }
 
@@ -217,9 +259,49 @@ namespace com.Core.Client
         //Send direction information to the animator
         private void updatePlayerMovementAnimations()
         {
-     
-            playerAnimator.SetFloat("Horizontal", Input.GetAxisRaw("Horizontal"));
-            playerAnimator.SetFloat("Vertical", Input.GetAxisRaw("Vertical"));
+            float horizontalAxis = Input.GetAxisRaw("Horizontal");
+            float verticalAxis = Input.GetAxisRaw("Vertical");
+
+            
+
+
+            bool isWalking = (horizontalAxis > 0.2f || horizontalAxis < -0.2f) || (verticalAxis > 0.2f || verticalAxis < -0.2f); //Gets true if player is walking
+            Debug.Log("H: " + horizontalAxis + " | V: " + verticalAxis + " | isWalking: " + isWalking + " | IsGrounded " + isGrounded + " CurrentAnim: " + playerAnimator.GetCurrentAnimatorStateInfo(0));
+
+            bool isPlayerMoving = isWalking && (isGrounded || !isGrounded);
+            playerAnimator.SetBool("isPlayerWalking", isPlayerMoving);
+            
+            //Animation logic
+            if(isWalking && !isGrounded) //Player is flying while running 
+            {
+                animatorFatigueTimer = 0f;
+                playerAnimator.SetFloat("Horizontal", 0f);
+                playerAnimator.SetFloat("Vertical", 0f);
+            } else if(isWalking && isGrounded)
+            {
+                animatorFatigueTimer = 0f;
+                playerAnimator.SetFloat("Horizontal", horizontalAxis);
+                playerAnimator.SetFloat("Vertical", verticalAxis);
+            } else if (!isWalking && !isGrounded)
+            {
+                animatorFatigueTimer = 0f;
+                playerAnimator.SetFloat("Horizontal", 0f);
+                playerAnimator.SetFloat("Vertical", 0f);
+            } else if (!isWalking && isGrounded)
+            {
+                animatorFatigueTimer += Time.deltaTime;
+                playerAnimator.SetFloat("Horizontal", horizontalAxis);
+                playerAnimator.SetFloat("Vertical", verticalAxis);
+            }
+
+            //If player is standing still for a certain amount of time will play a animation
+            if(animatorFatigueTimer > animatorFatigueDelay)
+            {
+                playerAnimator.SetTrigger("StandingFatigue");
+                animatorFatigueTimer = 0f;
+            }
+
+            
         }
 
         private protected void updatePlayerMovement()
