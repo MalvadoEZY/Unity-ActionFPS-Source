@@ -15,5 +15,5 @@ public static class ExtTransforms
                 MonoBehaviour.Destroy(child.gameObject);
             }
         }
-    }
+    } 
 }

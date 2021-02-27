@@ -11,7 +11,6 @@ using UnityEngine;
 //Game libs
 using com.Core.Configuration;
 
-
 namespace com.Core.Client
 {
     public class PlayerManager : MonoBehaviourPunCallbacks, IPunObservable
@@ -30,9 +29,7 @@ namespace com.Core.Client
 
         //Animation
         [SerializeField] private Animator playerAnimator; //Get Player Animator
-
-        private protected float animatorFatigueDelay = 10f; //Delay until the player plays the fatigue animation
-        private protected float animatorFatigueTimer = 0f; //Stores the player standing time
+        private protected Transform chest;
 
         //Checkers
         [SerializeField] private Transform wallChecker; //Check the material of the wall
@@ -46,56 +43,62 @@ namespace com.Core.Client
         [SerializeField] private Transform headBone;
 
         //Player Settings
-        private float MouseSensivity = 1f;
+        private protected float MouseSensivity = 1f;
 
         //Player listener
-        private AudioListener audioListener;
+        private protected AudioListener audioListener;
 
         //Solutions logic vars ////////////////// ----  V  V  V  V  V
         //Ground checker
-        private RaycastHit groundRayHit;
-        private float groundDistance = .3f;
-        private bool isGrounded = true;
+        private protected RaycastHit groundRayHit;
+        private protected float groundDistance = .3f;
+        private protected bool isGrounded = true;
 
         //Wall checker
-        private RaycastHit wallDetector;
-        private float minWallDistance = 0.1f;
-        private float maxWallDistance = 4f;
+        private protected RaycastHit wallDetector;
+        private protected float minWallDistance = 0.1f;
+        private protected float maxWallDistance = 4f;
 
-        private string currentWall;
-        private string previousWall;
-        private bool isOnWall;
+        private protected string currentWall;
+        private protected string previousWall;
+        private protected bool isOnWall;
 
         //Player Movement variables
-        private Vector3 velocity; //Relative velocity
-        private Vector3 move; //Direction of move
-        private int availableJumps = 2; //Available jumps of the player in total
-        private float jumpForce = -.6f; //0f - 1f  Jump force from the ground
-        private float playerRunningSpeed = 20f; //Default speed of the player
-        private float gravity = -28f; //World gravity for the player
-        private float GroundSmoothTime = .1f; // Movement smooth for the player on the ground
-        private float MidAirSmoothTime = .3f; // Movement smooth for the player on the air
-        private Vector2 currentDir = Vector2.zero; // Stores the current direction of the player
-        private Vector2 currentDirVelocity = Vector2.zero; // Stores the velocity of the player
+        private protected Vector3 velocity; //Relative velocity
+        private protected Vector3 move; //Direction of move
+        private protected int availableJumps = 2; //Available jumps of the player in total
+        private protected float jumpForce = -.6f; //0f - 1f  Jump force from the ground
+        private protected float playerRunningSpeed = 20f; //Default speed of the player
+        private protected float gravity = -28f; //World gravity for the player
+        private protected float GroundSmoothTime = .05f; // Movement smooth for the player on the ground
+        private protected float MidAirSmoothTime = .2f; // Movement smooth for the player on the air
+        private protected Vector2 currentDir = Vector2.zero; // Stores the current direction of the player
+        private protected Vector2 currentDirVelocity = Vector2.zero; // Stores the velocity of the player
 
         //Player view variables 
-        private float CameraMaxAngle = 90f; // Max camera angle upwards
-        private float CameraMinAngle = -90f; //Max camera angle downwards
+        private protected float CameraMaxAngle = 90f; // Max camera angle upwards
+        private protected float CameraMinAngle = -90f; // Max camera angle downwards
 
         public bool allowMovementUpdate { get; set; } //Useful to block movement controls in certain time
         public bool allowCameraUpdate { get; set; }  //Useful to block camera controls in certain time
 
-        private float cameraPitch = 0f; //Stores the camera pitch *Default: 0f
+        private protected float cameraPitch = 0f; //Stores the camera pitch *Default: 0f
 
-        private bool FPSMode = false; //Stores the information that if the player is in first person or not
+        private protected bool FPSMode = false; //Stores the information that if the player is in first person or not
+
+        //Animator
+        private protected float animatorFatigueDelay = 10f; //Delay until the player plays the fatigue animation
+        private protected float animatorFatigueTimer = 0f; //Stores the player standing time
 
         //Syncing player transform and rotation variables
-        private Quaternion RemotePlayerRotation;
-        private Quaternion remotePlayerRotVel;
+        private protected Quaternion RemotePlayerRotation;
+        private protected Vector3 remotePlayerRotVel;
 
-        private Vector3 RemotePlayerPosition;
-        private Vector3 remotePositionVel;
+        private protected Vector3 RemotePlayerPosition;
+        private protected Vector3 remotePositionVel;
 
+        private protected Vector3 RemotePlayerLooking;
+        private protected Vector3 remotePlayerLookVel;
 
        // DEVELOPMENT USE ONLY | IT WILL IGNORE ANY NETWORKING COMPONENT OF THE PLAYER
         /// //////// ----------------------------
@@ -104,37 +107,39 @@ namespace com.Core.Client
         // Start is called before the first frame update
         void Start()
         {
-                audioListener = GetComponent<AudioListener>();
-                allowMovementUpdate = true;
-                allowCameraUpdate = true;
+                    audioListener = GetComponent<AudioListener>();
+                    allowMovementUpdate = true;
+                    allowCameraUpdate = true;
+
                 if (photonView.IsMine)
                 {
-                toggleObjects(true);
-                FPSMode = true;
-                changePerspective(true);
-                playerCamera.gameObject.SetActive(true);
-                gameObject.layer = 10; // Set Player as local player
+                    toggleObjects(true);
+                    FPSMode = true;
+                    changePerspective(true);
+                    playerCamera.gameObject.SetActive(true);
+                    gameObject.layer = 10; // Set Player as local player
 
-                if (Cursor.visible)
-                {
-                    Cursor.lockState = CursorLockMode.Locked;
-                    Cursor.visible = false;
-                }
-                audioListener.enabled = true; //Enable audio listener
+                    if (Cursor.visible)
+                    {
+                        Cursor.lockState = CursorLockMode.Locked;
+                        Cursor.visible = false;
+                    }
+
+                    audioListener.enabled = true; //Enable audio listener
                 }
                 else
                 {
 
-                playerAnimator.SetBool("IsGrounded", true);
-                playerAnimator.SetFloat("Horizontal", 0f); //reset
-                playerAnimator.SetFloat("Vertical", 0f); //reset
-                    
-                FPSMode = false;
-                toggleObjects(false);
-                changePerspective(false);
-                playerCamera.gameObject.SetActive(false);
-                gameObject.layer = 11; // Set Player as network player
-                audioListener.enabled = false;
+                    playerAnimator.SetBool("IsGrounded", true);
+                    playerAnimator.SetFloat("Horizontal", 0f); //reset
+                    playerAnimator.SetFloat("Vertical", 0f); //reset
+                
+                    FPSMode = false;
+                    toggleObjects(false);
+                    changePerspective(false);
+                    playerCamera.gameObject.SetActive(false);
+                    gameObject.layer = 11; // Set Player as network player
+                    audioListener.enabled = false;
 
                 };
  
@@ -143,7 +148,6 @@ namespace com.Core.Client
         // Update is called once per frame
         void Update()
         {
-            syncNetworkClient();
             if (!photonView.IsMine) return;
             updatePlayerMovementAnimations();
             if (isGrounded)
@@ -159,14 +163,63 @@ namespace com.Core.Client
             checkUpdateKeybinds();
         }
 
+        private void LateUpdate()
+        {
+            if(!photonView.IsMine)
+            {
+                syncNetworkClient();
+                
+            }
+        }
+
         private void syncNetworkClient()
         {
             if(!photonView.IsMine)
             {
-                transform.position = Vector3.SmoothDamp(transform.position, RemotePlayerPosition, ref remotePositionVel, .2f);
-                transform.rotation = Quaternion.Lerp(transform.rotation, RemotePlayerRotation, .2f);
+                if (transform.position == RemotePlayerPosition && transform.rotation == RemotePlayerRotation && fullBodySpineBone.localEulerAngles == RemotePlayerLooking) return; // If player is completry still it will not update 
                 
+                float distanceMagnitude = transform.position.magnitude - RemotePlayerPosition.magnitude;
+                float localOffset = -45f;
+
+                if (RemotePlayerLooking.x < 40 && RemotePlayerLooking.x >= 0)
+                {
+                    localOffset = 15f;
+                } else if (RemotePlayerLooking.x < 91 && RemotePlayerLooking.x >= 40)
+                {
+                    localOffset = 30f;
+                } else
+                {
+                    localOffset = -45f;
+                }
+
+
+                if (distanceMagnitude < 10f)
+                {
+                    transform.position = Vector3.SmoothDamp(transform.position, RemotePlayerPosition, ref remotePositionVel, .2f);
+                    transform.rotation = SmoothDampQuaternion(transform.rotation, RemotePlayerRotation, ref remotePlayerRotVel, .15f);
+                    fullBodySpineBone.localEulerAngles = Vector3.SmoothDamp(fullBodySpineBone.localEulerAngles, new Vector3(localOffset, 0f, RemotePlayerLooking.x), ref remotePlayerLookVel, 0f);
+                } else
+                {
+                    transform.position = RemotePlayerPosition;
+                    transform.rotation = RemotePlayerRotation;
+                    fullBodySpineBone.localEulerAngles = RemotePlayerLooking;
+                }
             }
+        }
+
+
+        //Smooth damp for quaternion rotation
+        private protected Quaternion SmoothDampQuaternion(Quaternion current, Quaternion target, ref Vector3 currentVelocity, float smoothTime)
+        {
+            Vector3 c = current.eulerAngles;
+            Vector3 t = target.eulerAngles;
+            return Quaternion.Euler(
+              Mathf.SmoothDampAngle(c.x, t.x, ref currentVelocity.x, smoothTime),
+              Mathf.SmoothDampAngle(c.y, t.y, ref currentVelocity.y, smoothTime),
+              Mathf.SmoothDampAngle(c.z, t.z, ref currentVelocity.z, smoothTime)
+            );
+
+            
         }
 
         public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -175,15 +228,15 @@ namespace com.Core.Client
             {
                 stream.SendNext(transform.position);
                 stream.SendNext(transform.rotation);
-          
+                stream.SendNext(playerCamera.localEulerAngles);
+
             }
-            else if(stream.IsReading)
+            else if (stream.IsReading)
             {
                 RemotePlayerPosition = (Vector3)stream.ReceiveNext();
                 RemotePlayerRotation = (Quaternion)stream.ReceiveNext();
+                RemotePlayerLooking = (Vector3)stream.ReceiveNext();
             }
-            
-
         }
 
         private protected void toggleObjects(bool hideObjects)
@@ -262,11 +315,8 @@ namespace com.Core.Client
             float horizontalAxis = Input.GetAxisRaw("Horizontal");
             float verticalAxis = Input.GetAxisRaw("Vertical");
 
-            
-
-
             bool isWalking = (horizontalAxis > 0.2f || horizontalAxis < -0.2f) || (verticalAxis > 0.2f || verticalAxis < -0.2f); //Gets true if player is walking
-            Debug.Log("H: " + horizontalAxis + " | V: " + verticalAxis + " | isWalking: " + isWalking + " | IsGrounded " + isGrounded + " CurrentAnim: " + playerAnimator.GetCurrentAnimatorStateInfo(0));
+           
 
             bool isPlayerMoving = isWalking && (isGrounded || !isGrounded);
             playerAnimator.SetBool("isPlayerWalking", isPlayerMoving);
@@ -363,7 +413,7 @@ namespace com.Core.Client
                 playerOnlyArms.transform.localEulerAngles = playerCamera.transform.localEulerAngles; //Rotates the arms  
             }
 
-            photonView.RPC("rotateViewPlayerGlobally", RpcTarget.All, playerCamera.transform.localEulerAngles.x, playerCamera.transform.localEulerAngles.y, playerCamera.transform.localEulerAngles.z);
+            //photonView.RPC("rotateViewPlayerGlobally", RpcTarget.All, playerCamera.transform.localEulerAngles.x, playerCamera.transform.localEulerAngles.y, playerCamera.transform.localEulerAngles.z);
         }
 
         //Rotating the bone
@@ -417,6 +467,7 @@ namespace com.Core.Client
         private void checkWall()
         {
             RaycastHit hit;
+            
 
             if (Physics.SphereCast(wallChecker.position, minWallDistance, move.normalized, out hit, maxWallDistance))
             {

@@ -41,8 +41,8 @@ namespace com.Core.Network
         {
             Debug.Log("Connected to the master");
             //Need to have a character before connecting to the main server
-            PhotonNetwork.SendRate = 20;
-            PhotonNetwork.SerializationRate = 5;
+            PhotonNetwork.SendRate = 30;
+            PhotonNetwork.SerializationRate = 30;
             PhotonNetwork.AutomaticallySyncScene = true;
             PhotonNetwork.GameVersion = ConfigurationFile.GameVersion;
             PhotonNetwork.ConnectUsingSettings();
